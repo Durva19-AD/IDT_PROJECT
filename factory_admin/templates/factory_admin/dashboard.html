@@ -1,0 +1,93 @@
+{% extends 'factory_admin/base.html' %}
+
+{% block title %}Dashboard - Factory Admin{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Admin Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Requests</h5>
+                <p class="card-text fs-2">{{ total_requests }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Materials Configured</h5>
+                <p class="card-text fs-2">{{ materials.count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Low Stock Alerts</h5>
+                <p class="card-text fs-2">{{ low_stock_alerts.count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">Recent Quotation Requests</div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Type</th>
+                            <th>Material</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in recent_requests %}
+                        <tr>
+                            <td>{{ req.user.username }}</td>
+                            <td>{{ req.type|title }}</td>
+                            <td>{{ req.material|title }}</td>
+                            <td>{{ req.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4">No requests found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <a href="{% url 'factory_admin:requests' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4 border-danger">
+            <div class="card-header bg-danger text-white">Low Stock Alerts</div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Current Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in low_stock_alerts %}
+                        <tr>
+                            <td>{{ item.material.name }}</td>
+                            <td class="text-danger fw-bold">{{ item.quantity }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2">No low stock alerts.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <a href="{% url 'factory_admin:inventory' %}" class="btn btn-sm btn-outline-danger">Manage Inventory</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

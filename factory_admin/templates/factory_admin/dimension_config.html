@@ -1,0 +1,51 @@
+{% extends 'factory_admin/base.html' %}
+
+{% block title %}Dimension Limits - Factory Admin{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Dimension Limits Configuration</h2>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Update Dimension Limits</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <small class="text-muted d-block mb-3">Limits updated here will instantly apply to all user requests.</small>
+                    <button type="submit" class="btn btn-primary w-100">Save Config</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-7">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">Current Limits</div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Design Type</th>
+                            <th>Width (Min - Max)</th>
+                            <th>Height (Min - Max)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for config in configs %}
+                        <tr>
+                            <td><strong>{{ config.get_design_type_display }}</strong></td>
+                            <td>{{ config.min_width }} mm - {{ config.max_width }} mm</td>
+                            <td>{{ config.min_height }} mm - {{ config.max_height }} mm</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3">No dimension configs found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

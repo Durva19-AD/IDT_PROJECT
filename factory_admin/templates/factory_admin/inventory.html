@@ -1,0 +1,59 @@
+{% extends 'factory_admin/base.html' %}
+
+{% block title %}Inventory - Factory Admin{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Inventory Management</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Update Stock</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <small class="text-muted d-block mb-3">Note: Quantity will be added to the existing stock.</small>
+                    <button type="submit" class="btn btn-primary w-100">Update Inventory</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">Current Stock Levels</div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Quantity Available</th>
+                            <th>Last Updated</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in inventory_items %}
+                        <tr>
+                            <td>{{ item.material.name|title }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.last_updated|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if item.quantity < 50 %}
+                                    <span class="badge bg-danger">Low Stock</span>
+                                {% else %}
+                                    <span class="badge bg-success">In Stock</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4">No inventory data available.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

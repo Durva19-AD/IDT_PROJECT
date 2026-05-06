@@ -51,6 +51,11 @@
       </a> -->
 
       <div class="sidebar-menu-label">System</div>
+      {% if user.is_staff %}
+      <a class="sidebar-link" href="{% url 'factory_admin:dashboard' %}" id="navFactoryAdmin">
+        <i class="bi bi-shield-lock"></i> Factory Admin
+      </a>
+      {% endif %}
       <!-- <a class="sidebar-link" id="navSettings">
         <i class="bi bi-gear"></i> Settings
       </a> -->
@@ -259,11 +264,13 @@
                 <label>Width (mm)</label>
                 <input type="number" step="any" class="form-control-custom" name="width" id="inputWidth"
                   placeholder="Width" value="1800">
+                <small id="hintWidth" class="form-text text-muted d-block mt-1" style="font-size: 0.75rem;">Allowed: 300 mm – 3000 mm</small>
               </div>
               <div class="form-group-custom">
                 <label>Height (mm)</label>
                 <input type="number" step="any" class="form-control-custom" name="height" id="inputHeight"
                   placeholder="Height" value="1500">
+                <small id="hintHeight" class="form-text text-muted d-block mt-1" style="font-size: 0.75rem;">Allowed: 300 mm – 3000 mm</small>
               </div>
             </div>
             <div class="form-group-custom">
@@ -304,10 +311,14 @@
             <div class="form-group-custom">
               <label>Frame Material</label>
               <select class="form-control-custom" name="material" id="inputFrameMaterial">
+                {% for mat in materials %}
+                <option value="{{ mat.name|lower }}" {% if forloop.first %}selected{% endif %}>{{ mat.name|title }}</option>
+                {% empty %}
                 <option value="aluminium" selected>Aluminium</option>
                 <option value="upvc">uPVC</option>
                 <option value="wood">Wood</option>
                 <option value="steel">Steel</option>
+                {% endfor %}
               </select>
             </div>
             <div class="form-group-custom">
@@ -670,6 +681,23 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    window.MATERIAL_RATES = {
+      {% for mat in materials %}
+      "{{ mat.name|lower }}": {{ mat.price_per_unit }},
+      {% endfor %}
+    };
+    
+    window.DIMENSION_CONFIGS = {
+      {% for config in dimension_configs %}
+      "{{ config.design_type }}": {
+          min_w: {{ config.min_width }}, max_w: {{ config.max_width }},
+          min_h: {{ config.min_height }}, max_h: {{ config.max_height }}
+      },
+      {% endfor %}
+    };
+  </script>
 
   <script src="{% static 'js/dashboard.js' %}"></script>
 </body>

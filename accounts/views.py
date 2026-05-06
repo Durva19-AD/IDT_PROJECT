@@ -8,15 +8,20 @@ import json, io
 from datetime import date
 
 # ── Cost Calculation Helper ─────────────────────────────────────────────────
-MATERIAL_RATES = {
-    'aluminium': 500,
-    'steel':     700,
-    'wood':      600,
-}
+def get_material_rate(material_name):
+    from factory_admin.models import Material
+    try:
+        mat = Material.objects.get(name__iexact=material_name)
+        return mat.price_per_unit
+    except Material.DoesNotExist:
+        # Default fallback
+        rates = {'aluminium': 500, 'steel': 700, 'wood': 600}
+        return rates.get(material_name.lower(), 500)
+
 
 def calculate_cost(width, height, quantity, material):
     area       = (width / 1000) * (height / 1000)   # convert mm → m²
-    rate       = MATERIAL_RATES.get(material.lower(), 500)
+    rate       = get_material_rate(material)
     base_cost  = area * rate * quantity
     production = base_cost * 0.10
     labor      = base_cost * 0.10
@@ -118,6 +123,10 @@ def dashboard_view(request):
             ]
         })
 
+    from factory_admin.models import Material, DimensionConfig
+    materials = Material.objects.all()
+    dimension_configs = DimensionConfig.objects.all()
+
     context = {
         'designs':          designs,
         'recent_designs':   recent_designs,
@@ -128,6 +137,8 @@ def dashboard_view(request):
         'total_value':      round(total_value, 2),
         'boq_data':         boq_data,
         'cutting_data':     cutting_data,
+        'materials':        materials,
+        'dimension_configs': dimension_configs,
     }
     return render(request, 'dashboard.html', context)
 
@@ -191,7 +202,9 @@ def save_design_view(request):
             total_cost = cost['total']
 
         from .models import Design
-        design = Design.objects.create(
+        from django.core.exceptions import ValidationError
+        
+        design = Design(
             user=request.user,
             type=design_type,
             typology=typology,
@@ -202,17 +215,45 @@ def save_design_view(request):
             total_cost=total_cost,
         )
 
+        try:
+            design.full_clean()
+            design.save()
+        except ValidationError as e:
+            # Handle validation errors
+            error_msg = "; ".join([f"{v[0]}" for k, v in e.message_dict.items()])
+            if 'application/json' in (request.content_type or ''):
+                return JsonResponse({'status': 'error', 'error': error_msg}, status=400)
+            messages.error(request, error_msg)
+            return redirect('dashboard')
+
         msg = f'Design saved — {design_type.capitalize()} {typology.title()} | Total: ₹{total_cost:,.2f}'
         messages.success(request, msg)
 
+        warning_msg = None
+        from factory_admin.models import Inventory, Material
+        try:
+            mat = Material.objects.get(name__iexact=material)
+            try:
+                inv = Inventory.objects.get(material=mat)
+                if inv.quantity < quantity:
+                    warning_msg = f'Warning: Insufficient stock for {material.capitalize()}. Available: {inv.quantity}, Requested: {quantity}.'
+                    messages.warning(request, warning_msg)
+            except Inventory.DoesNotExist:
+                pass
+        except Material.DoesNotExist:
+            pass
+
         # AJAX response
         if 'application/json' in (request.content_type or ''):
-            return JsonResponse({
+            resp_data = {
                 'status': 'ok',
                 'design_id': design.id,
                 'message': msg,
                 'total_cost': total_cost,
-            })
+            }
+            if warning_msg:
+                resp_data['warning'] = warning_msg
+            return JsonResponse(resp_data)
         return redirect('dashboard')
     return redirect('dashboard')
 

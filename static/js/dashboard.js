@@ -47,6 +47,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (genBtn) {
         genBtn.addEventListener('click', generateDesign);
     }
+
+    // 7. Dimension Validation Listeners
+    const widthInput = document.getElementById('inputWidth');
+    const heightInput = document.getElementById('inputHeight');
+    const typeInput = document.getElementById('inputDesignType');
+    if (widthInput && heightInput && typeInput) {
+        widthInput.addEventListener('input', validateDimensions);
+        heightInput.addEventListener('input', validateDimensions);
+        typeInput.addEventListener('change', () => {
+            validateDimensions();
+        });
+        validateDimensions(); // Init on load
+    }
 });
 
 // ==========================================
@@ -132,6 +145,13 @@ window.resetForm = function() {
 window.generateDesign = function() {
     console.log('[FabriCAD] generateDesign() called');
 
+    const validation = window.validateDimensions ? window.validateDimensions() : {isValid: true};
+    if (!validation.isValid) {
+        const errors = [validation.wError, validation.hError].filter(Boolean).join('\n');
+        alert("Invalid Dimensions:\n" + errors);
+        return;
+    }
+
     const emptyState = document.getElementById('cadEmptyState');
     const activeState = document.getElementById('cadActiveState');
     if (emptyState) emptyState.style.display = 'none';
@@ -201,8 +221,9 @@ window.generateDesign = function() {
         .catch(err => console.warn('[FabriCAD] Cost calc error:', err));
     } else {
         // Fallback JS calculation when not logged in / no CSRF
-        const rates = { aluminium: 500, steel: 700, wood: 600, upvc: 400 };
-        const rate      = rates[material] || 500;
+        // Fallback JS calculation when not logged in / no CSRF
+        const rates = window.MATERIAL_RATES || { aluminium: 500, steel: 700, wood: 600, upvc: 400 };
+        const rate      = rates[material.toLowerCase()] || 500;
         const areaM2    = (width / 1000) * (height / 1000);
         const base      = areaM2 * rate * quantity;
         const prod      = base * 0.10;
@@ -259,6 +280,64 @@ function updateBOQTable(W, H, qty, material, cost) {
 
 
 // ==========================================
+// DIMENSION VALIDATION
+// ==========================================
+window.validateDimensions = function() {
+    const widthInput = document.getElementById('inputWidth');
+    const heightInput = document.getElementById('inputHeight');
+    const typeInput = document.getElementById('inputDesignType');
+    const hintWidth = document.getElementById('hintWidth');
+    const hintHeight = document.getElementById('hintHeight');
+    const genBtn = document.getElementById('generate-btn');
+    const saveFormBtn = document.querySelector('form[action="/save-design/"] button[type="submit"]');
+
+    if (!widthInput || !heightInput || !typeInput) return {isValid: true};
+
+    const type = typeInput.value; // 'window' or 'door'
+    const configs = window.DIMENSION_CONFIGS || {
+        'window': {min_w: 300, max_w: 3000, min_h: 300, max_h: 3000},
+        'door': {min_w: 600, max_w: 1500, min_h: 1800, max_h: 3000}
+    };
+    const conf = configs[type] || configs['window'];
+    
+    // Update hints dynamically
+    if (hintWidth) hintWidth.innerText = `Allowed: ${conf.min_w} mm – ${conf.max_w} mm`;
+    if (hintHeight) hintHeight.innerText = `Allowed: ${conf.min_h} mm – ${conf.max_h} mm`;
+
+    const w = parseFloat(widthInput.value) || 0;
+    const h = parseFloat(heightInput.value) || 0;
+
+    let isValid = true;
+    let wError = '', hError = '';
+
+    if (w < conf.min_w || w > conf.max_w) {
+        isValid = false;
+        wError = `Width must be between ${conf.min_w} and ${conf.max_w} mm for ${type}s`;
+        widthInput.classList.add('is-invalid', 'border-danger');
+        if (hintWidth) hintWidth.classList.add('text-danger');
+    } else {
+        widthInput.classList.remove('is-invalid', 'border-danger');
+        if (hintWidth) hintWidth.classList.remove('text-danger');
+    }
+
+    if (h < conf.min_h || h > conf.max_h) {
+        isValid = false;
+        hError = `Height must be between ${conf.min_h} and ${conf.max_h} mm for ${type}s`;
+        heightInput.classList.add('is-invalid', 'border-danger');
+        if (hintHeight) hintHeight.classList.add('text-danger');
+    } else {
+        heightInput.classList.remove('is-invalid', 'border-danger');
+        if (hintHeight) hintHeight.classList.remove('text-danger');
+    }
+
+    // Toggle button state
+    if (genBtn) genBtn.disabled = !isValid;
+    if (saveFormBtn) saveFormBtn.disabled = !isValid;
+
+    return { isValid, wError, hError };
+};
+
+// ==========================================
 // TYPOLOGY DROPDOWN UPDATE
 // ==========================================
 window.updateTypologyOptions = function() {
@@ -277,6 +356,7 @@ window.updateTypologyOptions = function() {
         sel.appendChild(opt);
     });
 
+    if (window.validateDimensions) window.validateDimensions();
     generateDesign();
 };
 
@@ -566,8 +646,8 @@ window.exportToPDF = function() {
     const today       = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
 
     // ── 3. Calculate cost (pure JS — no AJAX needed) ────────
-    const RATES = { aluminium: 500, steel: 700, wood: 600, upvc: 400 };
-    const rate       = RATES[material] || 500;
+    const RATES = window.MATERIAL_RATES || { aluminium: 500, steel: 700, wood: 600, upvc: 400 };
+    const rate       = RATES[material.toLowerCase()] || 500;
     const areaM2     = parseFloat(((W / 1000) * (H / 1000)).toFixed(4));
     const baseCost   = parseFloat((areaM2 * rate * qty).toFixed(2));
     const production = parseFloat((baseCost * 0.10).toFixed(2));

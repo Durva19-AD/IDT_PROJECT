@@ -1,0 +1,55 @@
+{% extends 'factory_admin/base.html' %}
+
+{% block title %}Materials - Factory Admin{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Materials Management</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Add/Update Material</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary w-100">Save Material</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">Current Materials</div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Price Per Unit (₹)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mat in materials %}
+                        <tr>
+                            <td>{{ mat.name|title }}</td>
+                            <td>₹{{ mat.price_per_unit }}</td>
+                            <td>
+                                <form method="post" action="{% url 'factory_admin:delete_material' mat.pk %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this material?');">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3">No materials configured.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Factory Admin{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { min-height: 100vh; background-color: #343a40; }
+        .sidebar a { color: #cfd8dc; text-decoration: none; padding: 15px; display: block; }
+        .sidebar a:hover { background-color: #495057; color: #fff; }
+        .sidebar .active { background-color: #0d6efd; color: #fff; }
+        .content { padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        {% if user.is_authenticated and user.is_staff %}
+        <div class="sidebar text-white" style="width: 250px;">
+            <h4 class="p-3">Factory Admin</h4>
+            <a href="{% url 'factory_admin:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="{% url 'factory_admin:materials' %}" class="{% if request.resolver_match.url_name == 'materials' %}active{% endif %}"><i class="bi bi-box"></i> Materials</a>
+            <a href="{% url 'factory_admin:inventory' %}" class="{% if request.resolver_match.url_name == 'inventory' %}active{% endif %}"><i class="bi bi-stack"></i> Inventory</a>
+            <a href="{% url 'factory_admin:requests' %}" class="{% if request.resolver_match.url_name == 'requests' %}active{% endif %}"><i class="bi bi-list-task"></i> Requests</a>
+            <a href="{% url 'factory_admin:dimension_config' %}" class="{% if request.resolver_match.url_name == 'dimension_config' %}active{% endif %}"><i class="bi bi-rulers"></i> Dimension Limits</a>
+            <a href="{% url 'factory_admin:logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+        {% endif %}
+        
+        <div class="content flex-grow-1">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
